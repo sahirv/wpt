@@ -11,10 +11,12 @@ jobs:
       uses: actions/checkout@v2
     - name: Install latest @webref/idl
       run: |
+        rm interfaces/*.idl
+        tmpdir=`mktemp -d`
+        cd $tmpdir
         npm install @webref/idl
-        mv node_modules/@webref/idl/*.idl interfaces/
-        rm -rf node_modules
-        git diff
+        cd -
+        mv $tmpdir/node_modules/@webref/idl/*.idl interfaces/
     - name: Create pull request
       uses: peter-evans/create-pull-request@v3
       env:
