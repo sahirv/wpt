@@ -9,20 +9,33 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Install latest @webref/idl
+    - name: Find latest @webref/idl version
+      run: echo "webref_idl_version=$(npm info @webref/idl version)" >> $GITHUB_ENV
+    - name: Sync with latest @webref/idl
       run: |
-        rm interfaces/*.idl
+        # delete interfaces/*.idl except tentative ones
+        find interfaces/ -name '*.idl' -not -name '*.tentative.idl' -delete
+        # install @webref/idl in a temporary directory
         tmpdir=`mktemp -d`
         cd $tmpdir
-        npm install @webref/idl
+        npm install @webref/idl@${{ env.webref_idl_version }}
         cd -
+        # move *.idl from @webref/idl to interfaces/
         mv $tmpdir/node_modules/@webref/idl/*.idl interfaces/
     - name: Create pull request
       uses: peter-evans/create-pull-request@v3
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        title: "Sync interfaces/ with @webref/idl"
-        commit-message: "Sync interfaces/ with @webref/idl"
+        title: "Sync interfaces/ with @webref/idl ${{ env.webref_idl_version }}"
+        commit-message: "Sync interfaces/ with @webref/idl ${{ env.webref_idl_version }}"
+        body: |
+          This PR was automatically created by a bot.
+
+          Before merging, please check that any tests that depend on the updated IDL files still work.
+
+          If additional changes are needed, please manually create another PR based on this one.
+
+          See the [README](https://github.com/web-platform-tests/wpt/blob/master/interfaces/README.md) for how the IDL files in this directory are used.
         branch: webref/idl
         delete-branch: true
